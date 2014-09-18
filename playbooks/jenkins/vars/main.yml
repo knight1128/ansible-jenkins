@@ -1,0 +1,6 @@
+---
+
+delay: 10
+jenkins_dest: /opt/jenkins
+cli_dest: '{{ jenkins_dest }}/jenkins-cli.jar'
+updates_dest: '{{ jenkins_dest }}/updates_jenkins.json'

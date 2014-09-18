@@ -1,0 +1,4 @@
+---
+- name: install packages
+  apt: pkg={{ item }} state=latest update_cache=yes
+  with_items: packages
