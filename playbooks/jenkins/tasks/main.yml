@@ -10,14 +10,36 @@
 - name: "Create CLI destination directory: {{ jenkins_dest }}"
   file: path={{ jenkins_dest }} state=directory owner=vagrant group=vagrant mode=0644
 
-- name: Get Jenkins CLI to {{ cli_dest }}
+- name: "Get jenkins CLI to {{ cli_dest }}"
   get_url: url=http://localhost:8080/jnlpJars/jenkins-cli.jar dest={{ cli_dest }} mode=0440
 
-- name: Get Jenkins updates to {{ updates_dest }}
+- name: "Get jenkins updates to {{ updates_dest }}"
   get_url: url=http://updates.jenkins-ci.org/update-center.json dest={{ updates_dest }} mode=0440
   register: jenkins_updates
 
-- name: Update-center Jenkins
+- name: Chown jenkins directory
+  file: path={{ jenkins_dest }} owner=vagrant group=vagrant
+
+- name: Update-center jenkins (remove first and last line js wrapper)
   shell: "cat {{ updates_dest }} | sed '1d;$d' | curl -X POST -H 'Accept: application/json' -d @- http://localhost:8080/updateCenter/byId/default/postBack"
   when: jenkins_updates.changed
   notify: Restart Jenkins
+
+- name: List plugins
+  shell: java -jar {{ cli_dest }} -s http://localhost:8080 list-plugins | cut -f 1 -d ' '
+  register: plugins_installed
+
+- name: Install/update plugins
+  shell: java -jar {{ cli_dest }} -s http://localhost:8080 install-plugin {{ item }}
+  when: plugins_installed.changed and plugins_installed.stdout.find('{{ item }}') == -1
+  with_items: plugins
+  notify: Restart Jenkins
+
+- name: List plugins to be updated
+  shell: java -jar {{ cli_dest }} -s http://localhost:8080 list-plugins | grep ')$' | cut -f 1 -d ' ' | sed ':a;N;$!ba;s/\n/ /g'
+  register: plugins_updates
+
+- name: Update plugins
+  shell: java -jar {{ jenkins.cli_dest }} -s http://localhost:8080 install-plugin {{ plugins_updates.stdout }}
+  when: plugins_updates.stdout != ''
+  notify: 'Restart Jenkins'
