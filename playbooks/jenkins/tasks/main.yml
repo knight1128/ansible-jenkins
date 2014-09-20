@@ -1,44 +1,7 @@
 ---
-- name: Install Jenkins
-  apt: pkg=jenkins state=latest update_cache=yes
-  register: jenkins_install
+- include: repo.yml
 
-- name: "{{ delay | default(10) }} second delay while starting Jenkins"
-  wait_for: port=8080 delay={{ delay | default(10) }}
-  when: jenkins_install.changed
+- include: jenkins.yml
 
-- name: "Create CLI destination directory: {{ jenkins_dest }}"
-  file: path={{ jenkins_dest }} state=directory owner=vagrant group=vagrant mode=0644
+- include: plugins.yml
 
-- name: "Get jenkins CLI to {{ cli_dest }}"
-  get_url: url=http://localhost:8080/jnlpJars/jenkins-cli.jar dest={{ cli_dest }} mode=0440
-
-- name: "Get jenkins updates to {{ updates_dest }}"
-  get_url: url=http://updates.jenkins-ci.org/update-center.json dest={{ updates_dest }} mode=0440
-  register: jenkins_updates
-
-- name: Chown jenkins directory
-  file: path={{ jenkins_dest }} owner=vagrant group=vagrant
-
-- name: Update-center jenkins (remove first and last line js wrapper)
-  shell: "cat {{ updates_dest }} | sed '1d;$d' | curl -X POST -H 'Accept: application/json' -d @- http://localhost:8080/updateCenter/byId/default/postBack"
-  when: jenkins_updates.changed
-  notify: Restart Jenkins
-
-- name: Install/update plugins
-  shell: java -jar {{ cli_dest }} -s http://localhost:8080 install-plugin {{ item }}
-  with_items: plugins
-  notify: Restart Jenkins
-
-
-- name: Configure Jenkins Port
-  when: port is defined
-  lineinfile: dest=/etc/default/jenkins regexp=^HTTP_PORT= line=HTTP_PORT={{ port }}
-
-- name: Configure Jenkins Prefix
-  when: prefix is defined
-  lineinfile: dest=/etc/default/jenkins regexp=^PREFIX= line=PREFIX={{ prefix }}
-
-- name: Configure Jenkins E-mail
-  when: email is defined
-  template: src=hudson.tasks.Mailer.xml.j2 dest={{ jenkins_lib }}/hudson.tasks.Mailer.xml owner=vagrant group=vagrant mode=0644
