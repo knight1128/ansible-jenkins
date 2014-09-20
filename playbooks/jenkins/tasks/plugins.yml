@@ -1,6 +1,7 @@
 ---
 - name: List plugins
   shell: java -jar {{ cli_dest }} -s http://localhost:8080 list-plugins | cut -f 1 -d ' '
+  when: plugins is defined
   register: plugins_installed
 
 - name: Install/update plugins
