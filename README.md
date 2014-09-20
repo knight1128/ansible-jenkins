@@ -7,7 +7,7 @@ This project is originated from https://github.com/ICTO/ansible-jenkins
 
 ## Provides
 
-1. Latest Oracle Java
+1. Latest Oracle Java (java7)
 1. Latest Jenkins server
 2. Jenkins plugins support
 
