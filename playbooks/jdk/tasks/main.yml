@@ -8,10 +8,15 @@
 - name: updating apt cache
   apt: update_cache=yes
 
+- name: checking java7
+  stat: path=/usr/bin/java
+  register: java_installed
+
 - name: installing java7
   shell: echo debconf shared/accepted-oracle-license-v1-1 select true |
          debconf-set-selections &&
          echo debconf shared/accepted-oracle-license-v1-1 seen true |
          debconf-set-selections &&
          apt-get -y install oracle-java7-installer
+  when: java_installed == false
 
