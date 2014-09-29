@@ -1,3 +1,6 @@
+tree
+
+cat playbooks/setup.yml
 
 play.sh
 
